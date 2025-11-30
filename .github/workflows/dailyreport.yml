@@ -1,0 +1,68 @@
+# GitHub Actions Workflow for Daily Email Reporter
+# This file tells GitHub Actions when and how to run your script
+
+# Name of the workflow (shows up in GitHub Actions tab)
+name: Daily Email Reporter
+
+# When to run this workflow
+on:
+  # Schedule: runs automatically at specified times
+  schedule:
+    # Cron syntax: minute hour day month dayofweek
+    # "0 6 * * *" means: At 6:00 AM UTC every day
+    # Lagos is UTC+1, so 6 AM UTC = 7 AM Lagos time
+    # Adjust the hour to match your desired local time
+    - cron: '0 6 * * *'
+  
+  # workflow_dispatch: allows manual triggering from GitHub UI
+  # This is super useful for testing!
+  workflow_dispatch:
+
+# Define the job(s) to run
+jobs:
+  # Job name
+  send-daily-report:
+    # Use the latest Ubuntu runner (GitHub's virtual machine)
+    runs-on: ubuntu-latest
+    
+    # Steps to execute in this job
+    steps:
+      # Step 1: Check out your repository code
+      # This downloads your repo files into the GitHub Actions runner
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      # Step 2: Set up Python environment
+      # Installs Python 3.11 on the virtual machine
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      # Step 3: Install Python dependencies
+      # Runs pip install for all packages in requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # Step 4: Run the email reporter script
+      # The secrets are accessed via ${{ secrets.SECRET_NAME }}
+      # They get set as environment variables that your script reads
+      - name: Run daily email reporter
+        env:
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+        run: |
+          python main.py
+      
+      # Optional Step 5: Upload logs if something goes wrong
+      # This helps with debugging
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: error-logs
+          path: |
+            *.log
+            *.txt
