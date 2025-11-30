@@ -1,2 +1,6 @@
 .venv/
 *.md
+__pycache__/
+*.pyc
+.env
+recipients.csv

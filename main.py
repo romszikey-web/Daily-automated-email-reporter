@@ -1,13 +1,17 @@
 import smtplib
 import requests
 import csv
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 
-SENDER_EMAIL = "romszikey@gmail.com"
-SENDER_PASSWORD = "vale ejlu aaet rtas"
+load_dotenv()
+
+SENDER_EMAIL = os.getenv('SENDER_EMAIL')
+SENDER_PASSWORD = os.getenv('SENDER_PASSWORD')
 RECIPIENTS_CSV = "recipients.csv"
 
 
