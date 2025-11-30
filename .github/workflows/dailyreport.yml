@@ -54,13 +54,13 @@ jobs:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
         run: |
-          python main.py
+          python daily_email_reporter.py
       
       # Optional Step 5: Upload logs if something goes wrong
       # This helps with debugging
       - name: Upload logs on failure
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: error-logs
           path: |
