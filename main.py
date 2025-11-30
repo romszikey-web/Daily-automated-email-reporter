@@ -1,5 +1,6 @@
 import smtplib
 import requests
+import csv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
@@ -7,13 +8,12 @@ from bs4 import BeautifulSoup
 
 SENDER_EMAIL = "romszikey@gmail.com"
 SENDER_PASSWORD = "vale ejlu aaet rtas"
-RECEIVER_EMAIL = "romszikey@gmail.com"
-CITY = "Ifo"
+RECIPIENTS_CSV = "recipients.csv"
 
 
-def get_weather():
+def get_weather(city):
     try:
-        url = f"https://wttr.in/{CITY}?format=j1"
+        url = f"https://wttr.in/{city}?format=j1"
         response = requests.get(url, timeout=30)
 
         if response.status_code == 200:
@@ -23,7 +23,7 @@ def get_weather():
             description = current['weatherDesc'][0]['value']
             humidity = current['humidity']
 
-            weather_info = f"🌤️ Weather in {CITY}:\n"
+            weather_info = f"🌤️ Weather in {city}:\n"
             weather_info += f"   Temperature: {temp}°C\n"
             weather_info += f"   Conditions: {description}\n"
             weather_info += f"   Humidity: {humidity}%\n"     
@@ -134,12 +134,37 @@ def get_fun_fact():
     except Exception as e:
         return f"❌ Fun fact error: {str(e)}\n"
 
-def send_email(subject, body):
+def read_recipients():
+    recipients = []
+
+    try:
+        with open(RECIPIENTS_CSV, 'r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                recipients.append({
+                    'email': row['email'].strip(),
+                    'name': row['name'].strip(),
+                    'city': row['city'].strip()
+                })
+
+        print(f"✅ Loaded {len(recipients)} recipents from csv\n")
+        return recipients
+
+    except FileNotFoundError:
+        print(f"❌ Error: Could not find '{RECIPIENTS_CSV}'")
+        print("Please create a CSV file with columns: email,name,city")
+        return []
+
+    except Exception as e:
+        print(f"❌ Error reading CSV: {str(e)}")
+        return []
+
+def send_email(recipient_email, recipient_name, subject, body):
     try:
         message = MIMEMultipart()
 
         message['From'] = SENDER_EMAIL
-        message['To'] = RECEIVER_EMAIL
+        message['To'] = recipient_email
         message['Subject'] = subject
         message.attach(MIMEText(body, 'plain'))
 
@@ -149,52 +174,105 @@ def send_email(subject, body):
         server.send_message(message)
         server.quit()
         
-        print("✅ Email sent successfully!")
+        print(f"   ✅ Sent to {recipient_name} ({recipient_email})")
         return True
 
     except Exception as e:
-        print(f"❌ Error sending email: {str(e)}")
-        return False
+         print(f"   ❌ Failed to send to {recipient_name}: {str(e)}")
+    return False
 
-def create_daily_report():
+def create_personalized_report(recipient_name, recipient_city, shared_data):
     print("📊 Generating daily report...\n")
 
     current_date = datetime.now().strftime("%B %d, %Y")
     current_time = datetime.now().strftime("%I:%M %p")
 
+    report = f"Hello {recipient_name}! 👋\n\n"
     report = f"Daily Report for {current_date}\n"
     report += f"Generated at {current_time}\n\n"
     report += "=" * 50 + "\n"
 
-    print("Fetching weather....")
-    report += get_weather()
+    print(f"   Fetching weather for {recipient_city}...")
+    report += get_weather(recipient_city)
     report += "\n"
 
-    print("Fetching quote....")
-    report += get_quote()
+    report += shared_data['quote']
     report += "\n"
-
-    print("Fetching news....")
-    report += get_news()
+    report += shared_data['news']
     report += "\n"
-
-    print("Fetching GitHub trending....")
-    report += get_github_trending()
+    report += shared_data['github']
     report += "\n"
-
-    print("Fetching fun fact....")
-    report += get_fun_fact()
+    report += shared_data['fact']
     report += "\n"
 
     report += "=" * 50 + "\n"
     report += "Have a great day! 🚀\n"
 
-    subject = f"Your Daily Report - {current_date}"
+    return report
 
-    print("\n📧 Sending email...")
-    send_email(subject, report)
+def create_and_send_reports():
+    print("📊 Starting Daily Email Reporter...\n")
+
+    recipients = read_recipients()
+    if not recipients:
+        print("No recipients to send to. Exiting")
+        return
+
+        print("📥 Fetching shared data...\n")
+    
+    shared_data = {}
+    
+    print("Fetching quote...")
+    shared_data['quote'] = get_quote()
+    
+    print("Fetching news...")
+    shared_data['news'] = get_news()
+    
+    print("Fetching GitHub trending...")
+    shared_data['github'] = get_github_trending()
+    
+    print("Fetching fun fact...")
+    shared_data['fact'] = get_fun_fact()
+    
+    print("\n📧 Sending personalized emails...\n")
+
+    current_date = datetime.now().strftime("%B %d, %Y")
+
+    sent_count = 0
+    failed_count = 0
+
+    for recipient in recipients:
+        print(f"Processing {recipient['name']}...")
+
+        report = create_personalized_report(
+            recipient['name'],
+            recipient['city'],
+            shared_data
+        )
+        
+        subject = f"Your Daily Report - {current_date}"
+
+        success = send_email(
+            recipient['email'],
+            recipient['name'],
+            subject,
+            report
+        )
+
+        
+        if success:
+            sent_count += 1
+        else:
+            failed_count += 1
+
+        print()
+
+    print("=" * 50)
+    print(f"✅ Successfully sent: {sent_count}")
+    print(f"❌ Failed: {failed_count}")
+    print(f"📊 Total recipients: {len(recipients)}")
 
 if __name__ == "__main__":
-    print("🚀 Starting Daily Email Reporter\n")
-    create_daily_report()
+    print("🚀 Daily Email Reporter - Multi-User Version\n")
+    create_and_send_reports()
     print("\n✅ All done!")
