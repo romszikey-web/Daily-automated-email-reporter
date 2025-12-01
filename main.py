@@ -163,9 +163,11 @@ def read_recipients():
             return recipients
         else:
             print(f"⚠️ Could not fetch from Google Sheets (Status: {response.status_code})")
+            return []
             
     except Exception as e:
         print(f"⚠️ Error reading from Google Sheets: {str(e)}")
+        return []
 
             
 def send_email(recipient_email, recipient_name, subject, body):
@@ -227,7 +229,7 @@ def create_and_send_reports():
         print("No recipients to send to. Exiting")
         return
 
-        print("📥 Fetching shared data...\n")
+    print("📥 Fetching shared data...\n")
     
     shared_data = {}
     
