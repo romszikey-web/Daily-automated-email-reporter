@@ -12,7 +12,8 @@ load_dotenv()
 
 SENDER_EMAIL = os.getenv('SENDER_EMAIL')
 SENDER_PASSWORD = os.getenv('SENDER_PASSWORD')
-RECIPIENTS_CSV = "recipients.csv"
+GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
+
 
 
 def get_weather(city):
@@ -139,11 +140,18 @@ def get_fun_fact():
         return f"❌ Fun fact error: {str(e)}\n"
 
 def read_recipients():
-    recipients = []
-
     try:
-        with open(RECIPIENTS_CSV, 'r', newline='', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
+        print("📊 Fetching recipients from Google Sheets...")
+        csv_url = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv"
+        response = requests.get(csv_url, timeout=30)
+
+        if response.status_code == 200:
+            csv_data = response.text.strip().split('\n')
+
+            import io 
+            reader = csv.DictReader(io.StringIO(response.text))
+
+            recipients = []
             for row in reader:
                 recipients.append({
                     'email': row['email'].strip(),
@@ -151,18 +159,15 @@ def read_recipients():
                     'city': row['city'].strip()
                 })
 
-        print(f"✅ Loaded {len(recipients)} recipents from csv\n")
-        return recipients
-
-    except FileNotFoundError:
-        print(f"❌ Error: Could not find '{RECIPIENTS_CSV}'")
-        print("Please create a CSV file with columns: email,name,city")
-        return []
-
+            print(f"✅ Loaded {len(recipients)} recipients from Google Sheets\n")
+            return recipients
+        else:
+            print(f"⚠️ Could not fetch from Google Sheets (Status: {response.status_code})")
+            
     except Exception as e:
-        print(f"❌ Error reading CSV: {str(e)}")
-        return []
+        print(f"⚠️ Error reading from Google Sheets: {str(e)}")
 
+            
 def send_email(recipient_email, recipient_name, subject, body):
     try:
         message = MIMEMultipart()
