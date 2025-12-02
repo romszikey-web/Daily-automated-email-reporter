@@ -1,5 +1,52 @@
-.venv/
-*.md
+# Python cache files
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Environment variables (NEVER COMMIT THIS!)
 .env
+config.py
+
+# CSV with emails (keep private - now using Google Sheets instead)
+recipients.csv
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Exclude specific markdown files (but keep README.md)
+automation-portfolio-roadmap.md
+telegram-anime-downloader-plan.md
+
+# Or if you want to exclude all .md EXCEPT README.md:
+# *.md
+# !README.md
+```
+
+---
+
+## **Two options:**
+
+### **Option 1: List specific files to ignore** (Recommended)
+```
+automation-portfolio-roadmap.md
+telegram-anime-downloader-plan.md
+```
+
+### **Option 2: Ignore all .md except README**
+```
+*.md
+!README.md
